@@ -28,60 +28,54 @@ impl Default for Segment {
 }
 
 mod std_imp {
-    use std::{
-        cell::{Ref, RefCell},
-        rc::Rc,
-    };
+    use std::rc::Rc;
 
     use derive_more::{Deref, DerefMut, From, Into};
 
     #[derive(Clone, PartialEq, From, Into, Deref, DerefMut)]
-    pub struct RcWrap<T>(Rc<RefCell<T>>);
+    pub struct Wrap<T>(Rc<T>);
 
-    impl<T> RcWrap<T> {
+    impl<T> Wrap<T> {
         pub fn new(t: T) -> Self {
-            Self(Rc::new(RefCell::new(t)))
-        }
-        pub fn read(&self) -> Ref<T> {
-            self.0.borrow()
+            Self(Rc::new(t))
         }
     }
 
-    pub type C<T> = RcWrap<T>;
+    pub type C<T> = Wrap<T>;
 }
 
 mod wasm_imp {
-    use dioxus::prelude::UseRef;
-    pub type C<T> = UseRef<T>;
+    use derive_more::{Deref, DerefMut, From, Into};
+    use dioxus::prelude::UseState;
+    #[derive(Clone, PartialEq, From, Into, Deref, DerefMut)]
+    pub struct C<T: 'static>(UseState<T>);
 }
 
 #[cfg(target_arch = "wasm32")]
-use wasm_imp::C;
+pub use wasm_imp::C;
 
 #[cfg(not(target_arch = "wasm32"))]
-use std_imp::C;
+pub use std_imp::C;
 
-#[derive(Clone, PartialEq, From, Into, Deref, DerefMut)]
-struct Srgb8H(C<Srgb8>);
-
-impl Debug for Srgb8H {
+impl Debug for C<Srgb8> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        f.debug_tuple("Srgb8H").field(&self.0.read()).finish()
+        f.debug_tuple("Srgb8H").field(self).finish()
     }
 }
 
-impl Hash for Srgb8H {
+impl Hash for C<Srgb8> {
     fn hash<H: std::hash::Hasher>(&self, state: &mut H) {
-        self.0.read().red.hash(state);
-        self.0.read().green.hash(state);
-        self.0.read().blue.hash(state);
+        self.red.hash(state);
+        self.green.hash(state);
+        self.blue.hash(state);
     }
 }
+
 #[derive(PartialEq, Clone, Hash, Debug, AsRef)]
 pub struct Segment {
     length: usize,
     bgr: bool,
-    colors: [Srgb8H; 2],
+    colors: [C<Srgb8>; 2],
     speed_ms: u128,
 }
 
@@ -120,12 +114,12 @@ impl Segment {
         self.speed_ms
     }
 
-    pub fn color_1(&self) -> Ref<Srgb8> {
-        self.colors[0].read()
+    pub fn color_1(&self) -> &Srgb8 {
+        &self.colors[0]
     }
 
-    pub fn color_2(&self) -> Ref<Srgb8> {
-        self.colors[1].read()
+    pub fn color_2(&self) -> &Srgb8 {
+        &self.colors[1]
     }
 }
 

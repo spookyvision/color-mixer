@@ -37,6 +37,8 @@ fn Color<'a>(cx: Scope, val: UseState<String>, seg: &'a Segment) -> Element {
     }))
 }
 
+use strip::C as Container;
+
 #[inline_props]
 fn Dat(cx: Scope, val: UseState<String>, now: u128) -> Element {
     const PRIMES: &[u128] = &[
@@ -51,7 +53,7 @@ fn Dat(cx: Scope, val: UseState<String>, now: u128) -> Element {
             100,
             false,
             [
-                Rc::new(Srgb::new(240, 200, 5)),
+                Container::new(Srgb::new(240, 200, 5)),
                 Rc::new(Srgb::new(255, 20, 200)),
             ],
             PRIMES[10] * fac,
