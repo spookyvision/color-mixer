@@ -1,14 +1,27 @@
-use chrono::{DateTime, Utc};
+use std::{cell::Ref, hash::Hash, ops::Deref, rc::Rc};
 
+use chrono::{DateTime, Utc};
+use derive_more::{Add, Deref, DerefMut, Display, From};
+use dioxus::prelude::UseRef;
 use palette::{convert::IntoColorUnclamped, FromColor, Hue, IntoColor, Luv, Mix, Srgb};
 
 pub type Srgb8 = palette::rgb::Rgb<palette::encoding::Srgb, u8>;
 
-#[derive(PartialEq, Clone)]
+#[derive(Clone, PartialEq, From, Deref, DerefMut, Debug)]
+struct Srgb8H(Srgb8);
+
+impl Hash for Srgb8H {
+    fn hash<H: std::hash::Hasher>(&self, state: &mut H) {
+        self.0.red.hash(state);
+        self.0.green.hash(state);
+        self.0.blue.hash(state);
+    }
+}
+#[derive(PartialEq, Clone, Hash, Debug)]
 pub struct Segment {
     length: usize,
     bgr: bool,
-    colors: [Srgb8; 2],
+    colors: [Srgb8H; 2],
     speed_ms: u128,
 }
 
@@ -17,7 +30,7 @@ impl Segment {
         Self {
             length,
             bgr,
-            colors,
+            colors: [colors[0].into(), colors[1].into()],
             speed_ms,
         }
     }
@@ -50,24 +63,23 @@ impl Segment {
 
 pub struct Control {
     start: DateTime<Utc>,
-    strips: Vec<Segment>,
+    now: DateTime<Utc>,
 }
 
 impl Control {
     pub fn new() -> Self {
-        Self {
-            start: Utc::now(),
-            strips: vec![],
-        }
+        let now = Utc::now();
+        Self { start: now, now }
     }
 
-    pub fn tick(&self, at_ms: u128) {
-        let now = Utc::now();
-        let dt = now
+    pub fn tick(&mut self) -> u128 {
+        self.now = Utc::now();
+        let dt = self
+            .now
             .signed_duration_since(self.start)
             .to_std()
             .unwrap()
             .as_millis();
-        for strip in &self.strips {}
+        dt
     }
 }
