@@ -2,9 +2,12 @@ pub mod strip;
 
 use chrono::{DateTime, NaiveDateTime, TimeZone, Utc};
 use dioxus::prelude::*;
+use gloo::{
+    events::EventListener,
+    timers::{callback::Timeout, future::TimeoutFuture},
+};
 use palette::{IntoColor, Srgb};
 use strip::Segment;
-use gloo::{events::EventListener, timers::callback::Timeout};
 
 fn main() {
     // init debug tool for WebAssembly
@@ -53,12 +56,9 @@ fn app(cx: Scope) -> Element {
 
     let ticker: &CoroutineHandle<()> = use_coroutine(&cx, |_rx| async move {
         for i in 0..5 {
-            Timeout::new(1_000, move || {
-                log::debug!("whorp");
-            })
-            .forget();
+            TimeoutFuture::new(1_000).await;
+            log::debug!("whorp");
         }
-
     });
 
     cx.render(rsx! (
