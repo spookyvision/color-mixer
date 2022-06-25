@@ -10,10 +10,8 @@ bytemuck = {version="1.9.1", features=["derive"]}
 palette = "0.6.0"
 simple-easing = "1.0.0"
 dioxus = { version = "0.2.4", features = ["web"] }
-
 log = "0.4.6"
-
-# WebAssembly Debug
 wasm-logger = "0.2.0"
 console_error_panic_hook = "0.1.7"
 chrono = { version = "0.4.19", features = ["wasmbind"] }
+gloo = "0.8.0"
