@@ -14,25 +14,12 @@ use palette::{convert::IntoColorUnclamped, FromColor, Hue, IntoColor, Luv, Mix, 
 
 pub type Srgb8 = palette::rgb::Rgb<palette::encoding::Srgb, u8>;
 
-#[cfg(not(target_arch = "wasm32"))]
-impl Default for Segment {
-    fn default() -> Self {
-        Self::new(
-            10,
-            false,
-            [
-                RcWrap::new(Srgb8::new(255, 150, 0)),
-                RcWrap::new(Srgb8::new(255, 10, 220)),
-            ],
-            2000,
-        )
-    }
-}
-
 mod std_imp {
     use std::rc::Rc;
 
     use derive_more::{Deref, DerefMut, From, Into};
+
+    use super::{Segment, Srgb8};
 
     #[derive(Clone, PartialEq, From, Into, Deref, DerefMut)]
     pub struct Wrap<T>(Rc<T>);
@@ -44,6 +31,20 @@ mod std_imp {
     }
 
     pub type C<T> = Wrap<T>;
+
+    impl Default for Segment {
+        fn default() -> Self {
+            Self::new(
+                10,
+                false,
+                [
+                    Wrap::new(Srgb8::new(255, 150, 0)),
+                    Wrap::new(Srgb8::new(255, 10, 220)),
+                ],
+                2000,
+            )
+        }
+    }
 }
 
 mod wasm_imp {
@@ -53,10 +54,10 @@ mod wasm_imp {
     pub struct C<T: 'static>(pub UseState<T>);
 }
 
-#[cfg(target_arch = "wasm32")]
-pub use wasm_imp::C;
+// #[cfg(target_arch = "wasm32")]
+// pub use wasm_imp::C;
 
-#[cfg(not(target_arch = "wasm32"))]
+// #[cfg(not(target_arch = "wasm32"))]
 pub use std_imp::C;
 
 impl Debug for C<Srgb8> {

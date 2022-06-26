@@ -85,10 +85,26 @@ use strip::C as Container;
 
 //     cx.render(rsx!(cols))
 // }
+const PRIMES: &[u128] = &[
+    2, 3, 5, 7, 11, 13, 17, 19, 23, 29, 31, 37, 41, 43, 47, 53, 59, 61, 67, 71, 73, 79, 83, 89, 97,
+];
 
 #[inline_props]
-fn Color2<'a>(cx: Scope, at: u128, seg: &'a Segment) -> Element {
-    let col = seg.color_at(*at);
+fn Color2(
+    cx: Scope,
+    prime_idx: usize,
+    fac: u128,
+    now: u128,
+    c1: UseState<Srgb8>,
+    c2: UseState<Srgb8>,
+) -> Element {
+    let seg = Segment::new(
+        100,
+        false,
+        [Container::new(**c1), Container::new(**c2)],
+        PRIMES[*prime_idx] * fac,
+    );
+    let col = seg.color_at(*now);
 
     cx.render(rsx!(div {
         class: "square",
@@ -143,24 +159,27 @@ fn ColorInput(cx: Scope, val: UseState<Srgb8>) -> Element {
 
 #[inline_props]
 fn SegmentN(cx: Scope, seg: Segment, prime_idx: usize, fac: u128, now: u128) -> Element {
-    const PRIMES: &[u128] = &[
-        2, 3, 5, 7, 11, 13, 17, 19, 23, 29, 31, 37, 41, 43, 47, 53, 59, 61, 67, 71, 73, 79, 83, 89,
-        97,
-    ];
-
     let c1 = use_state(&cx, || seg.color_1().to_owned());
     let c2 = use_state(&cx, || seg.color_1().to_owned());
 
-    // let seg = Segment::new(
-    //     100,
-    //     false,
-    //     [Srgb::new(240, 200, 5), Srgb::new(255, 20, 200)],
-    //     PRIMES[*prime_idx] * fac,
-    // );
+    let seg = use_state(&cx, || {
+        Segment::new(
+            100,
+            false,
+            [Container::new(**c1), Container::new(**c2)],
+            PRIMES[*prime_idx] * fac,
+        )
+    });
 
+    /*    prime_idx: usize,
+    fac: u128,
+    now: u128,
+    c1: UseState<Srgb8>,
+    c2: UseState<Srgb8>,*/
     cx.render(rsx!(
         ColorInput{val: c1.clone()}
         ColorInput{val: c2.clone()}
+        Color2{prime_idx: *prime_idx, fac: *fac, now: *now, c1: c1.clone(), c2: c2.clone()}
 
     ))
 }
@@ -192,7 +211,7 @@ fn app(cx: Scope) -> Element {
     let control = use_ref(&cx, || Control::new());
     let state = use_ref(&cx, || State::new_empty());
 
-    let state = State::new_empty();
+    let state = State::new([Segment::default()].into_iter());
 
     let now = control.write().tick();
     let now = use_state(&cx, || now);
