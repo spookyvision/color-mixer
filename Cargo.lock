@@ -137,6 +137,7 @@ dependencies = [
  "derive_more",
  "dioxus",
  "gloo",
+ "indexmap",
  "log",
  "palette",
  "simple-easing",

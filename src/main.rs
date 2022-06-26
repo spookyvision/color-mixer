@@ -10,6 +10,7 @@ use gloo::{
     events::EventListener,
     timers::{callback::Timeout, future::TimeoutFuture},
 };
+use indexmap::IndexMap;
 use palette::{IntoColor, Srgb};
 use strip::{Control, Segment, Srgb8, State};
 
@@ -141,7 +142,31 @@ fn ColorInput(cx: Scope, val: UseState<Srgb8>) -> Element {
 // }
 
 #[inline_props]
-fn Segments(cx: Scope, state: UseRef<State>, fac: UseState<String>, now: u128) -> Element {
+fn SegmentN(cx: Scope, seg: Segment, prime_idx: usize, fac: u128, now: u128) -> Element {
+    const PRIMES: &[u128] = &[
+        2, 3, 5, 7, 11, 13, 17, 19, 23, 29, 31, 37, 41, 43, 47, 53, 59, 61, 67, 71, 73, 79, 83, 89,
+        97,
+    ];
+
+    let c1 = use_state(&cx, || seg.color_1().to_owned());
+    let c2 = use_state(&cx, || seg.color_1().to_owned());
+
+    // let seg = Segment::new(
+    //     100,
+    //     false,
+    //     [Srgb::new(240, 200, 5), Srgb::new(255, 20, 200)],
+    //     PRIMES[*prime_idx] * fac,
+    // );
+
+    cx.render(rsx!(
+        ColorInput{val: c1.clone()}
+        ColorInput{val: c2.clone()}
+
+    ))
+}
+
+#[inline_props]
+fn Segments(cx: Scope, state: State, fac: UseState<String>, now: u128) -> Element {
     to_owned![state];
     let fac: u128 = fac.get().parse().unwrap();
     // let c = state.with(|state| {
@@ -153,10 +178,9 @@ fn Segments(cx: Scope, state: UseRef<State>, fac: UseState<String>, now: u128) -
 
     let content = rsx!(p {});
 
-    let read = state.read();
-    let content = read.iter().enumerate().map(|(id, seg)| {
+    let content = state.iter().enumerate().map(|(id, seg)| {
         rsx! {
-            ColorInput{val: seg.color_1_state().0}
+            SegmentN{seg:seg.clone(), prime_idx: 10, fac: fac, now: *now}
             p{}
         }
     });
@@ -167,6 +191,8 @@ fn Segments(cx: Scope, state: UseRef<State>, fac: UseState<String>, now: u128) -
 fn app(cx: Scope) -> Element {
     let control = use_ref(&cx, || Control::new());
     let state = use_ref(&cx, || State::new_empty());
+
+    let state = State::new_empty();
 
     let now = control.write().tick();
     let now = use_state(&cx, || now);

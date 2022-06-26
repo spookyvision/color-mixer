@@ -16,3 +16,4 @@ console_error_panic_hook = "0.1.7"
 chrono = { version = "0.4.19", features = ["wasmbind"] }
 gloo =  { version = "0.8", features = ["futures"] }
 derive_more = "0.99.17"
+indexmap = "1.9.1"
