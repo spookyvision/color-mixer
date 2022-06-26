@@ -1,72 +1,33 @@
-#![allow(unused)]
-
 use std::{
-    cell::{Ref, RefCell},
     fmt::Debug,
     hash::Hash,
     ops::{Deref, DerefMut},
-    rc::Rc,
 };
 
 use chrono::{DateTime, Utc};
-use derive_more::{AsRef, Deref, DerefMut, Display, From, Into};
-use palette::{convert::IntoColorUnclamped, FromColor, Hue, IntoColor, Luv, Mix, Srgb};
+use derive_more::AsRef;
+use palette::{IntoColor, Luv, Mix, Srgb};
 
 pub type Srgb8 = palette::rgb::Rgb<palette::encoding::Srgb, u8>;
 
-mod std_imp {
-    use std::rc::Rc;
+use derive_more::{Deref, DerefMut, From, Into};
 
-    use derive_more::{Deref, DerefMut, From, Into};
+#[derive(Clone, PartialEq, From, Into, Deref, DerefMut, Debug)]
+pub struct Wrap(Srgb8);
 
-    use super::{Segment, Srgb8};
-
-    #[derive(Clone, PartialEq, From, Into, Deref, DerefMut)]
-    pub struct Wrap<T>(Rc<T>);
-
-    impl<T> Wrap<T> {
-        pub fn new(t: T) -> Self {
-            Self(Rc::new(t))
-        }
-    }
-
-    pub type C<T> = Wrap<T>;
-
-    impl Default for Segment {
-        fn default() -> Self {
-            Self::new(
-                10,
-                false,
-                [
-                    Wrap::new(Srgb8::new(255, 150, 0)),
-                    Wrap::new(Srgb8::new(255, 10, 220)),
-                ],
-                2000,
-            )
-        }
+impl Default for Segment {
+    fn default() -> Self {
+        Self::new(
+            10,
+            false,
+            Srgb8::new(255, 150, 0),
+            Srgb8::new(255, 10, 220),
+            2000,
+        )
     }
 }
 
-mod wasm_imp {
-    use derive_more::{Deref, DerefMut, From, Into};
-    use dioxus::prelude::UseState;
-    #[derive(Clone, PartialEq, From, Into, Deref, DerefMut)]
-    pub struct C<T: 'static>(pub UseState<T>);
-}
-
-// #[cfg(target_arch = "wasm32")]
-// pub use wasm_imp::C;
-
-// #[cfg(not(target_arch = "wasm32"))]
-pub use std_imp::C;
-
-impl Debug for C<Srgb8> {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        f.debug_tuple("Srgb8").field(self).finish()
-    }
-}
-
-impl Hash for C<Srgb8> {
+impl Hash for Wrap {
     fn hash<H: std::hash::Hasher>(&self, state: &mut H) {
         self.red.hash(state);
         self.green.hash(state);
@@ -78,17 +39,17 @@ impl Hash for C<Srgb8> {
 pub struct Segment {
     length: usize,
     bgr: bool,
-    colors: [C<Srgb8>; 2],
-    speed_ms: u128,
+    colors: [Wrap; 2],
+    chill_ms: u128,
 }
 
 impl Segment {
-    pub fn new(length: usize, bgr: bool, colors: [C<Srgb8>; 2], speed_ms: u128) -> Self {
+    pub fn new(length: usize, bgr: bool, c1: Srgb8, c2: Srgb8, chill_ms: u128) -> Self {
         Self {
             length,
             bgr,
-            colors: [colors[0].clone().into(), colors[1].clone().into()],
-            speed_ms,
+            colors: [Wrap(c1), Wrap(c2)],
+            chill_ms,
         }
     }
 
@@ -107,18 +68,14 @@ impl Segment {
         res.into_format()
     }
     pub fn color_at(&self, at_millis: u128) -> Srgb8 {
-        let wrapped = (at_millis % self.speed_ms) as f32;
-        let speed = self.speed_ms as f32;
-        let t = wrapped / speed;
+        let wrapped = (at_millis % self.chill_ms) as f32;
+        let chill = self.chill_ms as f32;
+        let t = wrapped / chill;
         self.mix(t)
     }
 
-    pub fn speed_ms(&self) -> u128 {
-        self.speed_ms
-    }
-
-    pub fn color_1_state(&self) -> C<Srgb8> {
-        self.colors[0].clone()
+    pub fn chill_ms(&self) -> u128 {
+        self.chill_ms
     }
 
     pub fn color_1(&self) -> &Srgb8 {
