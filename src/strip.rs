@@ -1,3 +1,5 @@
+#![allow(unused)]
+
 use std::{
     cell::{Ref, RefCell},
     fmt::Debug,
@@ -48,7 +50,7 @@ mod wasm_imp {
     use derive_more::{Deref, DerefMut, From, Into};
     use dioxus::prelude::UseState;
     #[derive(Clone, PartialEq, From, Into, Deref, DerefMut)]
-    pub struct C<T: 'static>(UseState<T>);
+    pub struct C<T: 'static>(pub UseState<T>);
 }
 
 #[cfg(target_arch = "wasm32")]
@@ -59,7 +61,7 @@ pub use std_imp::C;
 
 impl Debug for C<Srgb8> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        f.debug_tuple("Srgb8H").field(self).finish()
+        f.debug_tuple("Srgb8").field(self).finish()
     }
 }
 
@@ -84,7 +86,7 @@ impl Segment {
         Self {
             length,
             bgr,
-            colors: [colors[0].into(), colors[1].into()],
+            colors: [colors[0].clone().into(), colors[1].clone().into()],
             speed_ms,
         }
     }
@@ -112,6 +114,10 @@ impl Segment {
 
     pub fn speed_ms(&self) -> u128 {
         self.speed_ms
+    }
+
+    pub fn color_1_state(&self) -> C<Srgb8> {
+        self.colors[0].clone()
     }
 
     pub fn color_1(&self) -> &Srgb8 {

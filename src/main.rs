@@ -1,3 +1,5 @@
+#![allow(unused)]
+
 pub mod strip;
 
 use std::{collections::HashMap, rc::Rc};
@@ -9,7 +11,7 @@ use gloo::{
     timers::{callback::Timeout, future::TimeoutFuture},
 };
 use palette::{IntoColor, Srgb};
-use strip::{Control, Segment, State};
+use strip::{Control, Segment, Srgb8, State};
 
 fn main() {
     // init debug tool for WebAssembly
@@ -39,49 +41,49 @@ fn Color<'a>(cx: Scope, val: UseState<String>, seg: &'a Segment) -> Element {
 
 use strip::C as Container;
 
-#[inline_props]
-fn Dat(cx: Scope, val: UseState<String>, now: u128) -> Element {
-    const PRIMES: &[u128] = &[
-        2, 3, 5, 7, 11, 13, 17, 19, 23, 29, 31, 37, 41, 43, 47, 53, 59, 61, 67, 71, 73, 79, 83, 89,
-        97,
-    ];
+// #[inline_props]
+// fn Dat(cx: Scope, val: UseState<String>, now: u128) -> Element {
+//     const PRIMES: &[u128] = &[
+//         2, 3, 5, 7, 11, 13, 17, 19, 23, 29, 31, 37, 41, 43, 47, 53, 59, 61, 67, 71, 73, 79, 83, 89,
+//         97,
+//     ];
 
-    let fac: u128 = val.get().parse().unwrap();
+//     let fac: u128 = val.get().parse().unwrap();
 
-    let segs = vec![
-        Segment::new(
-            100,
-            false,
-            [
-                Container::new(Srgb::new(240, 200, 5)),
-                Rc::new(Srgb::new(255, 20, 200)),
-            ],
-            PRIMES[10] * fac,
-        ),
-        Segment::new(
-            100,
-            false,
-            [
-                Rc::new(Srgb::new(255, 20, 80)),
-                Rc::new(Srgb::new(25, 250, 20)),
-            ],
-            PRIMES[11] * fac,
-        ),
-    ];
+//     let segs = vec![
+//         Segment::new(
+//             100,
+//             false,
+//             [
+//                 Container::new(Srgb::new(240, 200, 5)),
+//                 Rc::new(Srgb::new(255, 20, 200)),
+//             ],
+//             PRIMES[10] * fac,
+//         ),
+//         Segment::new(
+//             100,
+//             false,
+//             [
+//                 Rc::new(Srgb::new(255, 20, 80)),
+//                 Rc::new(Srgb::new(25, 250, 20)),
+//             ],
+//             PRIMES[11] * fac,
+//         ),
+//     ];
 
-    let cols = segs.into_iter().enumerate().map(|(id, seg)| {
-        let col = seg.color_at(*now);
-        rsx! {
-            div {
-                key: "dat-{id}",
-                class: "square",
-                style: format_args!("background-color: #{:x}", col)
-            }
-        }
-    });
+//     let cols = segs.into_iter().enumerate().map(|(id, seg)| {
+//         let col = seg.color_at(*now);
+//         rsx! {
+//             div {
+//                 key: "dat-{id}",
+//                 class: "square",
+//                 style: format_args!("background-color: #{:x}", col)
+//             }
+//         }
+//     });
 
-    cx.render(rsx!(cols))
-}
+//     cx.render(rsx!(cols))
+// }
 
 #[inline_props]
 fn Color2<'a>(cx: Scope, at: u128, seg: &'a Segment) -> Element {
@@ -94,45 +96,49 @@ fn Color2<'a>(cx: Scope, at: u128, seg: &'a Segment) -> Element {
 }
 
 #[inline_props]
-fn ColorInput(cx: Scope, val: UseState<String>) -> Element {
+fn ColorInput(cx: Scope, val: UseState<Srgb8>) -> Element {
     cx.render(rsx! {
         input {
             r#type: "color",
             //name: "val",
-            value: "{val}",
+            value: format_args!("#{:x}", **val),
             //id: "val",
-            oninput: move |ev| val.set(ev.value.clone()),
+            oninput: move |ev| {
+                let color: Srgb8 = ev.value.parse().unwrap();
+                val.set(color);
+
+            },
         }
     })
 }
 
-#[inline_props]
-fn Segment(
-    cx: Scope,
-    c1: UseState<String>,
-    c2: UseState<String>,
-    prime_idx: usize,
-    fac: u128,
-    now: u128,
-) -> Element {
-    const PRIMES: &[u128] = &[
-        2, 3, 5, 7, 11, 13, 17, 19, 23, 29, 31, 37, 41, 43, 47, 53, 59, 61, 67, 71, 73, 79, 83, 89,
-        97,
-    ];
+// #[inline_props]
+// fn Segment(
+//     cx: Scope,
+//     c1: UseState<String>,
+//     c2: UseState<String>,
+//     prime_idx: usize,
+//     fac: u128,
+//     now: u128,
+// ) -> Element {
+//     const PRIMES: &[u128] = &[
+//         2, 3, 5, 7, 11, 13, 17, 19, 23, 29, 31, 37, 41, 43, 47, 53, 59, 61, 67, 71, 73, 79, 83, 89,
+//         97,
+//     ];
 
-    let seg = Segment::new(
-        100,
-        false,
-        [Srgb::new(240, 200, 5), Srgb::new(255, 20, 200)],
-        PRIMES[*prime_idx] * fac,
-    );
+//     let seg = Segment::new(
+//         100,
+//         false,
+//         [Srgb::new(240, 200, 5), Srgb::new(255, 20, 200)],
+//         PRIMES[*prime_idx] * fac,
+//     );
 
-    cx.render(rsx!(
-        ColorInput{val: c1.clone()}
-        ColorInput{val: c2.clone()}
+//     cx.render(rsx!(
+//         ColorInput{val: c1.clone()}
+//         ColorInput{val: c2.clone()}
 
-    ))
-}
+//     ))
+// }
 
 #[inline_props]
 fn Segments(cx: Scope, state: UseRef<State>, fac: UseState<String>, now: u128) -> Element {
@@ -150,7 +156,7 @@ fn Segments(cx: Scope, state: UseRef<State>, fac: UseState<String>, now: u128) -
     let read = state.read();
     let content = read.iter().enumerate().map(|(id, seg)| {
         rsx! {
-            ColorInput{val: seg.color_1()}
+            ColorInput{val: seg.color_1_state().0}
             p{}
         }
     });
@@ -160,7 +166,7 @@ fn Segments(cx: Scope, state: UseRef<State>, fac: UseState<String>, now: u128) -
 
 fn app(cx: Scope) -> Element {
     let control = use_ref(&cx, || Control::new());
-    let state = use_ref(&cx, || State::new(10));
+    let state = use_ref(&cx, || State::new_empty());
 
     let now = control.write().tick();
     let now = use_state(&cx, || now);
@@ -173,31 +179,6 @@ fn app(cx: Scope) -> Element {
     ];
     const FAC: u128 = 3000;
 
-    let segs = use_ref(&cx, || {
-        vec![
-            Segment::new(
-                100,
-                false,
-                [Srgb::new(240, 200, 5), Srgb::new(255, 20, 200)],
-                PRIMES[10] * FAC,
-            ),
-            Segment::new(
-                100,
-                false,
-                [Srgb::new(255, 20, 80), Srgb::new(25, 250, 20)],
-                PRIMES[11] * FAC,
-            ),
-        ]
-    });
-
-    let hsegs = use_ref(&cx, || {
-        let res: HashMap<_, _> = (0..10)
-            .into_iter()
-            .map(|i| (format!("{i}"), Segment::default()))
-            .collect();
-        res
-    });
-
     // to_owned![hsegs];
 
     // hsegs.with(|segs| segs.iter().enumerate().map(|(i, (k, v))| rsx!(div {})));
@@ -206,7 +187,7 @@ fn app(cx: Scope) -> Element {
 
     let val = use_state(&cx, || initial_val.clone());
 
-    to_owned![segs, now, control];
+    to_owned![now, control];
     let nc = now.clone();
 
     let dog = use_future(&cx, &control, |c| async move {
@@ -236,7 +217,6 @@ fn app(cx: Scope) -> Element {
             p { "Dioxus is a portable, performant, and ergonomic framework for building cross-platform user interfaces in Rust." }
             p { "{now}"}
             form {
-                ColorInput {val: some_color.clone()}
                 input {
                     r#type: "range",
                     name: "val",
@@ -247,7 +227,6 @@ fn app(cx: Scope) -> Element {
                     oninput: move |ev| val.set(ev.value.clone()),
                 }
             }
-            Dat { val: val.clone(), now: *now }
             Segments {state: state.clone(), fac: val.clone(), now: *now}
 
             p { "{val}"}
